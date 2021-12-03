@@ -78,43 +78,14 @@ app.delete('/api/persons/:id', (request, response , next) => {
 app.post('/api/persons', (request, response, next) => {
 		const body = request.body;
 
+		const newPerson = new Person({
+					number: body.number,
+					name: body.name 		
+		});
 
-		try {
-					if (!body.name) {
-						return response.status(400).json({ 
-							error: 'name missing' 
-						});
-					}
-
-					if (!body.number) {
-						return response.status(400).json({ 
-							error: 'number missing' 
-						});
-					}
-
-					Person.findOne({ name: body.name }, function (err, person) {
-							if(person){
-									return response.status(400).json({ 
-										error: 'person already exists' 
-									});
-							}
-
-							const newPerson = new Person({
-								number: body.number,
-								name: body.name 		
-							});
-
-							newPerson.save().then(savedPerson => {
-								response.json(savedPerson)
-							})
-					
-					})
-			} catch (error) {
-					next(error);
-			}
-
-
-
+		newPerson.save().then(savedPerson => {
+			response.json(savedPerson)
+		}).catch (error => next(error));
 	
 });
 
@@ -161,7 +132,7 @@ app.put('/api/persons/:id', (request, response, next) => {
     number: body.number,
   };
 
-  Person.findByIdAndUpdate(request.params.id, note, { new: true })
+  Person.findByIdAndUpdate(request.params.id, note, { new: true, runValidators: true })
     .then(updatedPerson => {
       	response.json(updatedPerson)
     })
@@ -179,11 +150,17 @@ app.use(unknownEndpoint);
 
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message)
-
+ console.log(error)
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
-  } 
+  } else if(error.name === 'ValidationError'){
+				if(error.path  === "name"){
+						return response.status(400).json({ error: error.message })
+				}
+				if(error.path = "phone"){
+						return response.status(400).json({ error: error.message })
+				}
+	}
 
   next(error);
 }
